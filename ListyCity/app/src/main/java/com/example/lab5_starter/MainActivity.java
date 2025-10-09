@@ -65,9 +65,9 @@ public class MainActivity extends AppCompatActivity implements CityDialogFragmen
         });
 
         db = FirebaseFirestore.getInstance();
-        citiesRef = db. collection("cities");
+        citiesRef = db.collection("cities");
 
-        citiesRef. addSnapshotListener((value,  error) -> {
+        citiesRef.addSnapshotListener((value,  error) -> {
             if (error != null) {
                 Log.e("Firestore", error.toString());
             }
@@ -85,11 +85,24 @@ public class MainActivity extends AppCompatActivity implements CityDialogFragmen
 
     @Override
     public void updateCity(City city, String title, String year) {
+        // Remove the old document if the name changed (since name is used as doc ID)
+        if (!city.getName().equals(title)) {
+            // Delete old document
+            citiesRef.document(city.getName()).delete()
+                    .addOnSuccessListener(aVoid -> Log.d("Firestore", "Old city deleted"))
+                    .addOnFailureListener(e -> Log.e("Firestore", "Error deleting old city", e));
+        }
+
+        // Update city object locally
         city.setName(title);
         city.setProvince(year);
         cityArrayAdapter.notifyDataSetChanged();
 
-        // Updating the database using delete + addition
+        // Write updated city to Firestore
+        DocumentReference docRef = citiesRef.document(city.getName());
+        docRef.set(city)
+                .addOnSuccessListener(aVoid -> Log.d("Firestore", "City updated: " + city.getName()))
+                .addOnFailureListener(e -> Log.e("Firestore", "Error updating city", e));
     }
 
     @Override
@@ -97,6 +110,19 @@ public class MainActivity extends AppCompatActivity implements CityDialogFragmen
         cityArrayList.add(city);
         cityArrayAdapter.notifyDataSetChanged();
         DocumentReference docRef = citiesRef.document(city.getName());
-        docRef. set(city) ;
+        docRef.set(city);
+    }
+
+    @Override
+    public void deleteCity(City city) {
+        // Remove from the local list
+        cityArrayList.remove(city);
+        cityArrayAdapter.notifyDataSetChanged();
+
+        // Delete from Firestore
+        DocumentReference docRef = citiesRef.document(city.getName());
+        docRef.delete()
+                .addOnSuccessListener(aVoid -> Log.d("Firestore", "City deleted: " + city.getName()))
+                .addOnFailureListener(e -> Log.e("Firestore", "Error deleting city", e));
     }
 }
