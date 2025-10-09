@@ -62,6 +62,8 @@ public class CityDialogFragment extends DialogFragment {
             city = null;}
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+
+        // used LLM to implement and learn about neutral button
         return builder
                 .setView(view)
                 .setTitle("City Details")
